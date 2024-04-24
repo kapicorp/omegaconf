@@ -151,11 +151,12 @@ class Node(ABC):
         self,
         flags: Union[List[str], str],
         values: Union[List[Optional[bool]], Optional[bool]],
+        recursive: bool = False,
     ) -> "Node":
         if isinstance(flags, str):
             flags = [flags]
 
-        if values is None or isinstance(values, bool):
+        if values is None or isinstance(values, (bool, str)):
             values = [values]
 
         if len(values) == 1:
@@ -174,6 +175,21 @@ class Node(ABC):
                 assert self._metadata.flags is not None
                 self._metadata.flags[flag] = value
         self._invalidate_flags_cache()
+
+        if recursive:
+            from . import DictConfig, ListConfig
+
+            if isinstance(self, DictConfig):
+                for key in self.keys():
+                    child = self._get_child(key)
+                    if child is not None:
+                        child._set_flag(flags, values, recursive=recursive)  # type: ignore
+            elif isinstance(self, ListConfig):
+                for index in range(len(self)):
+                    child = self._get_child(index)
+                    if child is not None:
+                        child._set_flag(flags, values, recursive=recursive)  # type: ignore
+
         return self
 
     def _get_node_flag(self, flag: str) -> Optional[bool]:
@@ -193,7 +209,7 @@ class Node(ABC):
         if ret is _DEFAULT_MARKER_:
             ret = self._get_flag_no_cache(flag)
             cache[flag] = ret
-        assert ret is None or isinstance(ret, bool)
+        assert ret is None or isinstance(ret, (bool, str))
         return ret
 
     def _get_flag_no_cache(self, flag: str) -> Optional[bool]:

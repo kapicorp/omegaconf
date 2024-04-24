@@ -253,6 +253,7 @@ class OmegaConf:
             Any,
         ],
         list_merge_mode: ListMergeMode = ListMergeMode.REPLACE,
+        log_filename: str = "",
     ) -> Union[ListConfig, DictConfig]:
         """
         Merge a list of previously created configs into a single one
@@ -269,6 +270,9 @@ class OmegaConf:
         target = copy.deepcopy(configs[0])
         target = _ensure_container(target)
         assert isinstance(target, (DictConfig, ListConfig))
+
+        global log_file
+        log_file = log_filename
 
         with flag_override(target, "readonly", False):
             target.merge_with(
@@ -293,6 +297,7 @@ class OmegaConf:
             Any,
         ],
         list_merge_mode: ListMergeMode = ListMergeMode.REPLACE,
+        log_filename: str = "",
     ) -> Union[ListConfig, DictConfig]:
         """
         Merge a list of previously created configs into a single one
@@ -311,6 +316,9 @@ class OmegaConf:
         target = configs[0]
         target = _ensure_container(target)
         assert isinstance(target, (DictConfig, ListConfig))
+
+        global log_file
+        log_file = log_filename
 
         with flag_override(
             target, ["readonly", "no_deepcopy_set_nodes"], [False, True]
@@ -514,9 +522,11 @@ class OmegaConf:
         OmegaConf.set_cache(to_config, OmegaConf.get_cache(from_config))
 
     @staticmethod
-    def set_readonly(conf: Node, value: Optional[bool]) -> None:
+    def set_readonly(
+        conf: Node, value: Optional[bool], recursive: bool = False
+    ) -> None:
         # noinspection PyProtectedMember
-        conf._set_flag("readonly", value)
+        conf._set_flag("readonly", value, recursive=recursive)
 
     @staticmethod
     def is_readonly(conf: Node) -> Optional[bool]:
@@ -524,9 +534,11 @@ class OmegaConf:
         return conf._get_flag("readonly")
 
     @staticmethod
-    def set_struct(conf: Container, value: Optional[bool]) -> None:
+    def set_struct(
+        conf: Container, value: Optional[bool], recursive: bool = False
+    ) -> None:
         # noinspection PyProtectedMember
-        conf._set_flag("struct", value)
+        conf._set_flag("struct", value, recursive=recursive)
 
     @staticmethod
     def is_struct(conf: Container) -> Optional[bool]:
@@ -746,7 +758,7 @@ class OmegaConf:
                 node = root._get_child(last_key)
                 if OmegaConf.is_config(node):
                     assert isinstance(node, BaseContainer)
-                    node.merge_with(value)
+                    node.merge_with(value, list_merge_mode=ListMergeMode.EXTEND)
                     return
 
             if OmegaConf.is_dict(root):
@@ -780,7 +792,7 @@ class OmegaConf:
         )
 
     @staticmethod
-    def resolve(cfg: Container) -> None:
+    def resolve(cfg: Container, escape_interpolation_strings: bool = False) -> None:
         """
         Resolves all interpolations in the given config object in-place.
 
@@ -795,7 +807,10 @@ class OmegaConf:
             raise ValueError(
                 f"Invalid config type ({type(cfg).__name__}), expected an OmegaConf Container"
             )
-        omegaconf._impl._resolve(cfg)
+        omegaconf._impl._resolve(cfg, escape_interpolation_strings=True)
+        if not escape_interpolation_strings:
+            # Do a second pass without escaping.
+            omegaconf._impl._resolve(cfg, escape_interpolation_strings=False)
 
     @staticmethod
     def missing_keys(cfg: Any) -> Set[str]:
