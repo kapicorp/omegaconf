@@ -1,7 +1,8 @@
-[run]
+[report]
+show_missing = True
 omit =
     .nox/*
-    *tests*
+    */tests/*
     docs/*
     omegaconf/grammar/gen/*
     omegaconf/vendor/*
@@ -9,7 +10,6 @@ omit =
     omegaconf/typing.py
     .stubs
 
-[report]
 exclude_lines =
     pragma: no cover
     raise AssertionError

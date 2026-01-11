@@ -380,7 +380,7 @@ class OmegaConf:
                     f"to be an interpolation. Nested interpolations are not supported for "
                     f"resolvers registered with `[legacy_]register_resolver()`, please use "
                     f"`register_new_resolver()` instead (see "
-                    f"https://github.com/omry/omegaconf/issues/426 for migration instructions)."
+                    f"https://github.com/omry/omegaconf/issues/426 for migration instructions)."  # noqa: E231
                 )
             key = args_str
             val = cache[key] if key in cache else resolver(*args_unesc)
@@ -493,7 +493,7 @@ class OmegaConf:
         Returns a bool: True if resolver is removed and False if not removed.
 
         .. warning:
-            This method can remove deafult resolvers as well.
+            This method can remove default resolvers as well.
 
         :param name: Name of the resolver.
         :return: A bool (``True`` if resolver is removed, ``False`` if not found before removing).
